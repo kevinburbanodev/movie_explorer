@@ -1,0 +1,52 @@
+import type { Locale } from '@/shared/i18n/locale.store'
+
+export const strings = {
+  en: {
+    searchPlaceholder: 'Search movies…',
+    noResults: 'No results',
+    back: 'Back',
+    watchTrailer: 'Watch trailer',
+    cast: 'Cast',
+    trailer: 'Trailer',
+    noTrailer: 'Trailer unavailable',
+    similar: 'Similar',
+    loadingMore: 'Loading more…',
+    endOfCatalog: '— end of catalog —',
+    trending: 'Trending this week',
+    resultsFor: (query: string) => `Results · "${query}"`,
+    emptyLine: (query: string) => `We couldn't find "${query}". Try another title.`,
+    titlesCount: (count: number) => `${count} titles · TMDB`,
+    whereToWatch: 'Where to watch',
+    stream: 'Stream',
+    rent: 'Rent',
+    buy: 'Buy',
+    noWatchProviders: 'Not currently available to stream, rent, or buy.',
+    poweredByJustWatch: 'Streaming data provided by JustWatch',
+  },
+  es: {
+    searchPlaceholder: 'Buscar películas…',
+    noResults: 'Sin resultados',
+    back: 'Volver',
+    watchTrailer: 'Ver trailer',
+    cast: 'Reparto',
+    trailer: 'Trailer',
+    noTrailer: 'Trailer no disponible',
+    similar: 'Similares',
+    loadingMore: 'Cargando más…',
+    endOfCatalog: '— fin del catálogo —',
+    trending: 'Tendencias esta semana',
+    resultsFor: (query: string) => `Resultados · "${query}"`,
+    emptyLine: (query: string) => `No encontramos "${query}". Prueba con otro título.`,
+    titlesCount: (count: number) => `${count} títulos · TMDB`,
+    whereToWatch: 'Dónde ver',
+    stream: 'Streaming',
+    rent: 'Alquilar',
+    buy: 'Comprar',
+    noWatchProviders: 'No está disponible actualmente para stream, alquiler o compra.',
+    poweredByJustWatch: 'Datos de streaming proporcionados por JustWatch',
+  },
+} as const satisfies Record<Locale, unknown>
+
+export function useStrings(locale: Locale) {
+  return strings[locale]
+}
