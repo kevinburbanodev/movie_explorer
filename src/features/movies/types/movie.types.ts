@@ -118,3 +118,19 @@ export interface TmdbWatchProvidersRegionDto {
 export interface TmdbWatchProvidersDto {
   results: Record<string, TmdbWatchProvidersRegionDto>
 }
+
+export interface TmdbPersonSearchResultDto {
+  id: number
+  name: string
+  popularity: number
+  known_for_department?: string
+}
+
+export interface TmdbPersonMovieCreditsDto {
+  cast: TmdbMovieDto[]
+}
+
+export interface ActorSearchResult {
+  person: { id: number; name: string } | null
+  movies: Movie[]
+}

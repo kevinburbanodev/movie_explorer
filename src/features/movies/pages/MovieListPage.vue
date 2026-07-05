@@ -10,6 +10,7 @@ import { useStrings } from '@/shared/i18n/strings'
 import SkeletonGrid from '@/shared/components/SkeletonGrid.vue'
 import EmptyState from '@/shared/components/EmptyState.vue'
 import ErrorState from '@/shared/components/ErrorState.vue'
+import AdSlot from '@/shared/components/AdSlot.vue'
 
 const store = useMovieListStore()
 const { locale } = storeToRefs(useLocaleStore())
@@ -20,9 +21,10 @@ useInfiniteScroll(sentinel, () => store.loadNextPage())
 
 onMounted(() => store.init())
 
-const sectionTitle = computed(() =>
-  store.query.trim() ? t.value.resultsFor(store.query.trim()) : t.value.trending,
-)
+const sectionTitle = computed(() => {
+  if (store.matchedActorName) return t.value.moviesWithActor(store.matchedActorName)
+  return store.query.trim() ? t.value.resultsFor(store.query.trim()) : t.value.trending
+})
 const headline = computed(() => t.value.titlesCount(store.movies.length))
 </script>
 
@@ -31,6 +33,8 @@ const headline = computed(() => t.value.titlesCount(store.movies.length))
     <MovieListNavBar :search-placeholder="t.searchPlaceholder" :headline="headline" @search="store.search" />
 
     <div class="movie-list-page__content">
+      <AdSlot class="movie-list-page__ad" />
+
       <div class="movie-list-page__section-title">{{ sectionTitle }}</div>
 
       <SkeletonGrid v-if="store.isInitialLoading" />
@@ -112,5 +116,9 @@ const headline = computed(() => t.value.titlesCount(store.movies.length))
 
 .movie-list-page__sentinel {
   height: 1px;
+}
+
+.movie-list-page__ad {
+  margin-bottom: 24px;
 }
 </style>

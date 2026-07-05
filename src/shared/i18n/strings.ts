@@ -22,6 +22,13 @@ export const strings = {
     buy: 'Buy',
     noWatchProviders: 'Not currently available to stream, rent, or buy.',
     poweredByJustWatch: 'Streaming data provided by JustWatch',
+    biography: 'Biography',
+    noBiography: 'No biography available.',
+    born: 'Born',
+    diedOn: 'Died',
+    filmography: 'Filmography',
+    knownFor: (department: string) => `Known for ${department}`,
+    moviesWithActor: (name: string) => `Movies with ${name}`,
   },
   es: {
     searchPlaceholder: 'Buscar películas…',
@@ -44,6 +51,13 @@ export const strings = {
     buy: 'Comprar',
     noWatchProviders: 'No está disponible actualmente para stream, alquiler o compra.',
     poweredByJustWatch: 'Datos de streaming proporcionados por JustWatch',
+    biography: 'Biografía',
+    noBiography: 'No hay biografía disponible.',
+    born: 'Nacimiento',
+    diedOn: 'Fallecimiento',
+    filmography: 'Filmografía',
+    knownFor: (department: string) => `Conocido por ${department}`,
+    moviesWithActor: (name: string) => `Películas con ${name}`,
   },
 } as const satisfies Record<Locale, unknown>
 

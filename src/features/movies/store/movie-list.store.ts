@@ -13,14 +13,22 @@ export const useMovieListStore = defineStore('movieList', () => {
   const totalPages = ref(0)
   const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
   const errorMessage = ref('')
+  const matchedActorName = ref<string | null>(null)
 
   let activeController: AbortController | null = null
+  let knownIds = new Set<number>()
 
   const hasMore = computed(() => page.value < totalPages.value)
   const isEmpty = computed(() => status.value === 'success' && movies.value.length === 0)
   const isInitialLoading = computed(() => status.value === 'loading' && movies.value.length === 0)
   const isLoadingMore = computed(() => status.value === 'loading' && movies.value.length > 0)
   const isAtEnd = computed(() => status.value === 'success' && movies.value.length > 0 && !hasMore.value)
+
+  function appendUnique(newMovies: Movie[]) {
+    const fresh = newMovies.filter((movie) => !knownIds.has(movie.id))
+    fresh.forEach((movie) => knownIds.add(movie.id))
+    movies.value = [...movies.value, ...fresh]
+  }
 
   async function loadPage(targetPage: number) {
     activeController?.abort()
@@ -31,13 +39,41 @@ export const useMovieListStore = defineStore('movieList', () => {
     errorMessage.value = ''
 
     try {
-      const result = query.value.trim()
-        ? await moviesApi.search(query.value.trim(), targetPage, controller.signal)
-        : await moviesApi.discover(targetPage, controller.signal)
+      const trimmedQuery = query.value.trim()
 
-      movies.value = targetPage === 1 ? result.items : [...movies.value, ...result.items]
-      page.value = result.page
-      totalPages.value = result.totalPages
+      if (!trimmedQuery) {
+        const result = await moviesApi.discover(targetPage, controller.signal)
+        movies.value = targetPage === 1 ? result.items : [...movies.value, ...result.items]
+        knownIds = new Set(movies.value.map((movie) => movie.id))
+        page.value = result.page
+        totalPages.value = result.totalPages
+        matchedActorName.value = null
+        status.value = 'success'
+        return
+      }
+
+      if (targetPage === 1) {
+        const [titleResult, actorResult] = await Promise.all([
+          moviesApi.search(trimmedQuery, 1, controller.signal),
+          moviesApi.searchByActor(trimmedQuery, controller.signal),
+        ])
+
+        movies.value = []
+        knownIds = new Set()
+        matchedActorName.value = actorResult.person?.name ?? null
+        appendUnique(actorResult.movies)
+        appendUnique(titleResult.items)
+
+        page.value = titleResult.page
+        totalPages.value = titleResult.totalPages
+        status.value = 'success'
+        return
+      }
+
+      const titleResult = await moviesApi.search(trimmedQuery, targetPage, controller.signal)
+      appendUnique(titleResult.items)
+      page.value = titleResult.page
+      totalPages.value = titleResult.totalPages
       status.value = 'success'
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return
@@ -49,8 +85,10 @@ export const useMovieListStore = defineStore('movieList', () => {
   function search(newQuery: string) {
     query.value = newQuery
     movies.value = []
+    knownIds = new Set()
     page.value = 0
     totalPages.value = 0
+    matchedActorName.value = null
     void loadPage(1)
   }
 
@@ -69,6 +107,7 @@ export const useMovieListStore = defineStore('movieList', () => {
     () => localeStore.locale,
     () => {
       movies.value = []
+      knownIds = new Set()
       page.value = 0
       totalPages.value = 0
       void loadPage(1)
@@ -80,6 +119,7 @@ export const useMovieListStore = defineStore('movieList', () => {
     movies,
     status,
     errorMessage,
+    matchedActorName,
     hasMore,
     isEmpty,
     isInitialLoading,

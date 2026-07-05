@@ -14,6 +14,7 @@ import MovieGrid from '@/features/movies/components/MovieGrid.vue'
 import LanguageToggle from '@/shared/components/LanguageToggle.vue'
 import SkeletonGrid from '@/shared/components/SkeletonGrid.vue'
 import ErrorState from '@/shared/components/ErrorState.vue'
+import AdSlot from '@/shared/components/AdSlot.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -88,6 +89,8 @@ const runtimeLabel = computed(() => {
       </div>
 
       <div class="detail-body">
+        <AdSlot class="detail-body__ad" />
+
         <template v-if="store.movie.cast.length">
           <div class="detail-body__section-title">{{ t.cast }}</div>
           <MovieCastList :cast="store.movie.cast" />
@@ -343,5 +346,9 @@ const runtimeLabel = computed(() => {
 
 .detail-body__section-title--watch {
   margin-top: 40px;
+}
+
+.detail-body__ad {
+  margin-bottom: 26px;
 }
 </style>

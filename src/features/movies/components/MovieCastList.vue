@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { tmdbImageUrl } from '@/shared/lib/tmdb-image'
 import { letterFor } from '@/shared/lib/movie-visual'
 import type { CastMember } from '@/features/movies/types/movie.types'
@@ -40,17 +41,24 @@ function scrollNext() {
   track.value?.scrollBy({ left: stepWidth(), behavior: 'smooth' })
 }
 
+// Deliberately avoid setPointerCapture here: capturing the pointer on the
+// track element causes the browser to dispatch the native "click" event to
+// the track itself instead of the RouterLink under the cursor, which
+// silently breaks navigation on a plain (non-drag) click. Tracking the drag
+// via window-level listeners keeps native click targeting intact.
 function onPointerDown(event: PointerEvent) {
   const el = track.value
-  if (!el) return
+  if (!el || event.button !== 0) return
   isDragging = true
   didDrag = false
   dragStartX = event.clientX
   dragStartScrollLeft = el.scrollLeft
-  el.setPointerCapture(event.pointerId)
+  window.addEventListener('pointermove', onWindowPointerMove)
+  window.addEventListener('pointerup', onWindowPointerUp)
+  window.addEventListener('pointercancel', onWindowPointerUp)
 }
 
-function onPointerMove(event: PointerEvent) {
+function onWindowPointerMove(event: PointerEvent) {
   const el = track.value
   if (!isDragging || !el) return
   const delta = event.clientX - dragStartX
@@ -58,10 +66,11 @@ function onPointerMove(event: PointerEvent) {
   el.scrollLeft = dragStartScrollLeft - delta
 }
 
-function onPointerUp(event: PointerEvent) {
-  const el = track.value
+function onWindowPointerUp() {
   isDragging = false
-  el?.releasePointerCapture(event.pointerId)
+  window.removeEventListener('pointermove', onWindowPointerMove)
+  window.removeEventListener('pointerup', onWindowPointerUp)
+  window.removeEventListener('pointercancel', onWindowPointerUp)
 }
 
 function onClickCapture(event: MouseEvent) {
@@ -80,6 +89,7 @@ watch(
 )
 
 onMounted(() => void nextTick(updateArrowState))
+onUnmounted(onWindowPointerUp)
 </script>
 
 <template>
@@ -99,13 +109,15 @@ onMounted(() => void nextTick(updateArrowState))
       class="cast-list__track"
       @scroll="updateArrowState"
       @pointerdown="onPointerDown"
-      @pointermove="onPointerMove"
-      @pointerup="onPointerUp"
-      @pointercancel="onPointerUp"
-      @pointerleave="onPointerUp"
       @click.capture="onClickCapture"
     >
-      <div v-for="member in cast" :key="member.id" class="cast-list__item">
+      <RouterLink
+        v-for="member in cast"
+        :key="member.id"
+        :to="{ name: 'person-detail', params: { id: member.id } }"
+        class="cast-list__item"
+        draggable="false"
+      >
         <div class="cast-list__avatar">
           <img
             v-if="tmdbImageUrl(member.profilePath, 'w185')"
@@ -119,7 +131,7 @@ onMounted(() => void nextTick(updateArrowState))
         </div>
         <div class="cast-list__name">{{ member.name }}</div>
         <div class="cast-list__character">{{ member.character }}</div>
-      </div>
+      </RouterLink>
     </div>
 
     <button
@@ -165,6 +177,9 @@ onMounted(() => void nextTick(updateArrowState))
 .cast-list__item {
   flex: 0 0 116px;
   text-align: center;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .cast-list__avatar {

@@ -1,7 +1,8 @@
 import { httpClient } from '@/shared/api/http-client'
 import { useLocaleStore } from '@/shared/i18n/locale.store'
-import { toMovieDetail, toPaginatedMovies } from '@/features/movies/api/movie.mapper'
+import { toMovie, toMovieDetail, toPaginatedMovies } from '@/features/movies/api/movie.mapper'
 import type {
+  ActorSearchResult,
   MovieDetail,
   PaginatedResult,
   Movie,
@@ -9,6 +10,8 @@ import type {
   TmdbMovieDetailDto,
   TmdbMovieDto,
   TmdbPaginatedResponseDto,
+  TmdbPersonMovieCreditsDto,
+  TmdbPersonSearchResultDto,
   TmdbVideosDto,
   TmdbWatchProvidersDto,
 } from '@/features/movies/types/movie.types'
@@ -20,6 +23,12 @@ function currentLanguage(): string {
 function currentWatchRegion(): string {
   return useLocaleStore().tmdbWatchRegion()
 }
+
+// Below this, TMDB's fuzzy name matching starts surfacing near-unknown people
+// whose name merely contains the query (e.g. searching "batman" can match an
+// obscure actor literally named "Batman"), which would hijack an otherwise
+// normal title search.
+const MIN_ACTOR_POPULARITY = 5
 
 export const moviesApi = {
   async discover(page: number, signal?: AbortSignal): Promise<PaginatedResult<Movie>> {
@@ -38,6 +47,34 @@ export const moviesApi = {
       signal,
     )
     return toPaginatedMovies(dto)
+  },
+
+  async searchByActor(query: string, signal?: AbortSignal): Promise<ActorSearchResult> {
+    const language = currentLanguage()
+    const peopleResult = await httpClient.get<TmdbPaginatedResponseDto<TmdbPersonSearchResultDto>>(
+      '/search/person',
+      { query, language },
+      signal,
+    )
+    const topPerson = peopleResult.results[0]
+    if (!topPerson || topPerson.popularity < MIN_ACTOR_POPULARITY) return { person: null, movies: [] }
+
+    const credits = await httpClient.get<TmdbPersonMovieCreditsDto>(
+      `/person/${topPerson.id}/movie_credits`,
+      { language },
+      signal,
+    )
+    const seen = new Set<number>()
+    const movies = credits.cast
+      .filter((movie) => {
+        if (seen.has(movie.id)) return false
+        seen.add(movie.id)
+        return true
+      })
+      .sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''))
+      .map(toMovie)
+
+    return { person: { id: topPerson.id, name: topPerson.name }, movies }
   },
 
   async getDetail(id: number, signal?: AbortSignal): Promise<MovieDetail> {

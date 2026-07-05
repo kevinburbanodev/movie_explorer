@@ -14,6 +14,12 @@ const router = createRouter({
       component: () => import('@/features/movies/pages/MovieDetailPage.vue'),
       props: true,
     },
+    {
+      path: '/person/:id',
+      name: 'person-detail',
+      component: () => import('@/features/people/pages/PersonDetailPage.vue'),
+      props: true,
+    },
   ],
 })
 
