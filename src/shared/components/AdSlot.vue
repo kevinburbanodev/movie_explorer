@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { env } from '@/shared/config/env'
 import { loadAdsenseScript } from '@/shared/lib/load-adsense-script'
 
@@ -13,8 +13,6 @@ withDefaults(
     fullWidthResponsive: true,
   },
 )
-
-const insEl = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   if (!env.adsenseEnabled) return
@@ -30,7 +28,6 @@ onMounted(() => {
 <template>
   <ins
     v-if="env.adsenseEnabled"
-    ref="insEl"
     class="adsbygoogle ad-slot"
     style="display: block"
     :data-ad-client="env.adsenseClientId"
